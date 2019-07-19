@@ -4,6 +4,7 @@ add_library(EasyJitRuntime SHARED
   Function.cpp
   InitNativeTarget.cpp
   Utils.cpp
+  MyJITEventListener.hpp
   pass/ContextAnalysis.cpp
   pass/DevirtualizeConstant.cpp
   pass/InlineParameters.cpp

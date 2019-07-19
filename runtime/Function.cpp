@@ -17,6 +17,8 @@
 #include <llvm/Analysis/TargetLibraryInfo.h> 
 #include <llvm/Support/FileSystem.h>
 
+#include "MyJITEventListener.hpp"
+
 #ifdef NDEBUG
 #include <llvm/IR/Verifier.h>
 #endif
@@ -77,6 +79,10 @@ static std::unique_ptr<llvm::ExecutionEngine> GetEngine(std::unique_ptr<llvm::Mo
           .setEngineKind(llvm::EngineKind::JIT)
           .setOptLevel(llvm::CodeGenOpt::Level::Aggressive)
           .create());
+
+  MyJITEventListener *EL = new MyJITEventListener();
+
+  EE->RegisterJITEventListener(EL);
 
   if(!EE) {
     throw easy::ExecutionEngineCreateError(Name);
