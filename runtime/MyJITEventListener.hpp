@@ -26,54 +26,55 @@ class MyJITEventListener : public llvm::JITEventListener {
 private:
 
 public:
-	MyJITEventListener(){}
+    MyJITEventListener(){}
 
-	~MyJITEventListener(){}
+    ~MyJITEventListener(){}
 
-	virtual void NotifyObjectEmitted(const llvm::object::ObjectFile &obj, const llvm::RuntimeDyld::LoadedObjectInfo &L){}
-		llvm::object::OwningBinary<llvm::object::ObjectFile>OWOF = L.getObjectForDebug(obj);
-		llvm::object::ObjectFile &OF = *OWOF.getBinary();
+    virtual void NotifyObjectEmitted(const llvm::object::ObjectFile &obj, const llvm::RuntimeDyld::LoadedObjectInfo &L){
+        llvm::object::OwningBinary<llvm::object::ObjectFile>OWOF = L.getObjectForDebug(obj);
+        llvm::object::ObjectFile &OF = *OWOF.getBinary();
 
-		/* Enabling perf mappings */
+        /* Enabling perf mappings */
+        // La partie perf a été fournie par Alberto Dassatti
         pid_t pid = getpid();
         std::string fname = "/tmp/perf-" + std::to_string(pid) + ".map";
         FILE* fperf = fopen(fname.c_str(), "w");
         FILE* fsection = fopen("content.bin", "w");
       
-		for (const std::pair<llvm::object::SymbolRef, uint64_t> &P : llvm::object::computeSymbolSizes(OF)) {
-			llvm::object::SymbolRef Sym = P.first;
+        for (const std::pair<llvm::object::SymbolRef, uint64_t> &P : llvm::object::computeSymbolSizes(OF)) {
+            llvm::object::SymbolRef Sym = P.first;
          
-			llvm::Expected<llvm::StringRef> eName = Sym.getName();
-			if(!eName)
-				continue;
-			llvm::StringRef Name = *eName;
+            llvm::Expected<llvm::StringRef> eName = Sym.getName();
+            if(!eName)
+                continue;
+            llvm::StringRef Name = *eName;
 
-			llvm::Expected<uint64_t> eAddr = Sym.getAddress();
-			if(!eAddr)
-				continue;
-			uint64_t Addr = *eAddr;
+            llvm::Expected<uint64_t> eAddr = Sym.getAddress();
+            if(!eAddr)
+                continue;
+            uint64_t Addr = *eAddr;
 
-			uint64_t Size = P.second;
+            uint64_t Size = P.second;
 
-			std::string NameS = Name.str();
+            std::string NameS = Name.str();
 
-			fprintf(fperf,"%llx %x %s\n", Addr, P.second, NameS.c_str());
+            fprintf(fperf,"%llx %x %s\n", Addr, P.second, NameS.c_str());
 
-			//get jited machine code
+            //get jited machine code
             if(Size != 0){
-            	fname = NameS + ".jit";
-            	FILE* fsection = fopen(fname.c_str(), "w");
-            	uint8_t *AddrP =  reinterpret_cast<uint8_t *>(Addr);
-            	for (int i = 0; i < Size; i++){
-            		fprintf(fsection,"0x%hx ", *AddrP++);
-            	}
-            	fclose(fsection);
+                fname = NameS + ".jit";
+                FILE* fsection = fopen(fname.c_str(), "w");
+                uint8_t *AddrP =  reinterpret_cast<uint8_t *>(Addr);
+                for (int i = 0; i < Size; i++){
+                    fprintf(fsection,"0x%hx ", *AddrP++);
+                }
+                fclose(fsection);
             }
               
-	}
-		fclose(fperf);
+    }
+        fclose(fperf);
 
-	}
+    }
 };
 
 
